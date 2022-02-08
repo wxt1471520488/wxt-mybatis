@@ -6,6 +6,7 @@ import com.wangxt.mybatis.pojo.MappedStatement;
 import com.wangxt.mybatis.utils.GenericTokenParser;
 import com.wangxt.mybatis.utils.ParameterMapping;
 import com.wangxt.mybatis.utils.ParameterMappingTokenHandler;
+import org.apache.commons.lang3.StringUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
@@ -16,10 +17,11 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
-public class simpleExecutor implements Executor {
+public class SimpleExecutor implements Executor {
 
-    @Override                                                                                //user
+    @Override
     public <E> List<E> query(Configuration configuration, MappedStatement mappedStatement, Object... params) throws Exception {
         // 1. 注册驱动，获取连接
         Connection connection = configuration.getDataSource().getConnection();
@@ -43,11 +45,15 @@ public class simpleExecutor implements Executor {
             String content = parameterMapping.getContent();
 
             //反射
-            Field declaredField = paramtertypeClass.getDeclaredField(content);
-            //暴力访问
-            declaredField.setAccessible(true);
-            Object o = declaredField.get(params[0]);
-
+            Object o = null;
+            try{
+                Field declaredField = paramtertypeClass.getDeclaredField(content);
+                //暴力访问
+                declaredField.setAccessible(true);
+                o = declaredField.get(params[0]);
+            }catch (Exception ignore){
+                o = params[0];
+            }
             preparedStatement.setObject(i + 1, o);
 
         }
@@ -66,24 +72,43 @@ public class simpleExecutor implements Executor {
             //元数据
             ResultSetMetaData metaData = resultSet.getMetaData();
             for (int i = 1; i <= metaData.getColumnCount(); i++) {
-
                 // 字段名
                 String columnName = metaData.getColumnName(i);
                 // 字段的值
                 Object value = resultSet.getObject(columnName);
 
                 //使用反射或者内省，根据数据库表和实体的对应关系，完成封装
-                PropertyDescriptor propertyDescriptor = new PropertyDescriptor(columnName, resultTypeClass);
+                String s = db2Object(columnName);
+                PropertyDescriptor propertyDescriptor = new PropertyDescriptor(s, resultTypeClass);
                 Method writeMethod = propertyDescriptor.getWriteMethod();
                 writeMethod.invoke(o, value);
-
-
             }
             objects.add(o);
 
         }
         return (List<E>) objects;
 
+    }
+
+    private String db2Object(String colName){
+        String[] s = colName.split("_");
+        if(s.length == 1){
+            return colName;
+        }else {
+            StringBuilder tempName = new StringBuilder(StringUtils.EMPTY);
+            for (int i = 0; i < s.length; i++) {
+                if(i == 0){
+                    tempName.append(s[i]);
+                }else {
+                    String c = String.valueOf(s[i].charAt(0));
+                    String newC = c.toUpperCase(Locale.ROOT);
+                    String replace = s[i].replace(c, newC);
+                    tempName.append(replace);
+                }
+            }
+
+            return tempName.toString();
+        }
     }
 
     private Class<?> getClassType(String paramterType) throws ClassNotFoundException {

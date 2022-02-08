@@ -3,12 +3,15 @@ package com.wangxt.mybatis.config;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.wangxt.mybatis.io.Resources;
 import com.wangxt.mybatis.pojo.Configuration;
+import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
 import java.beans.PropertyVetoException;
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
@@ -56,11 +59,20 @@ public class XMLConfigBuilder {
         List<Element> mapperList = rootElement.selectNodes("//mapper");
 
         for (Element element : mapperList) {
+            // 这里是 包路径
             String mapperPath = element.attributeValue("resource");
-            InputStream resourceAsSteam = Resources.getResourceAsSteam(mapperPath);
-            XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(configuration);
-            xmlMapperBuilder.parse(resourceAsSteam);
-
+            // 获取包下的所有mapper文件
+            File file = new File(mapperPath);
+            File[] files = file.listFiles();
+            for(File f : files){
+                String name = f.getName();
+                if(StringUtils.isNotBlank(name) && name.endsWith("Mapper.xml")){
+                    String path = f.getPath();
+                    InputStream resourceAsSteam = Resources.getResourceAsSteam(path.replace("src\\main\\resources\\",""));
+                    XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(configuration);
+                    xmlMapperBuilder.parse(resourceAsSteam);
+                }
+            }
         }
 
         return configuration;

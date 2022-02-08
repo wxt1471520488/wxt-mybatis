@@ -3,6 +3,11 @@ package com.wangxt.mybatis.pojo;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * @author wangxt
+ * @description 存放每个mapper中的sql信息
+ * @date 2022/2/8 10:11
+ **/
 @Getter
 @Setter
 public class MappedStatement {

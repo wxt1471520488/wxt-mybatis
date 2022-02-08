@@ -17,7 +17,7 @@ public class DefaultSqlSession implements SqlSession {
     @Override
     public <E> List<E> selectList(String statementId, Object... params) throws Exception {
         //将要去完成对simpleExecutor里的query方法的调用
-        simpleExecutor simpleExecutor = new simpleExecutor();
+        SimpleExecutor simpleExecutor = new SimpleExecutor();
         MappedStatement mappedStatement = configuration.getMappedStatementMap().get(statementId);
         List<Object> list = simpleExecutor.query(configuration, mappedStatement, params);
         return (List<E>) list;
@@ -26,10 +26,12 @@ public class DefaultSqlSession implements SqlSession {
     @Override
     public <T> T selectOne(String statementid, Object... params) throws Exception {
         List<Object> objects = selectList(statementid, params);
-        if (objects.size() <= 1) {
+        if (objects.size() == 1) {
             return (T) objects.get(0);
-        } else {
-            throw new RuntimeException("查询结果为空或者返回结果过多");
+        } else if(objects.size() <= 0){
+            return (T) new Object();
+        } else{
+            throw new RuntimeException("to many results");
         }
     }
 
@@ -41,7 +43,6 @@ public class DefaultSqlSession implements SqlSession {
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 // 底层都还是去执行JDBC代码 //根据不同情况，来调用selctList或者selectOne
                 // 准备参数 1：statmentid :sql语句的唯一标识：namespace.id= 接口全限定名.方法名
-                // 方法名：findAll
                 String methodName = method.getName();
                 String className = method.getDeclaringClass().getName();
 
@@ -57,7 +58,6 @@ public class DefaultSqlSession implements SqlSession {
                 }
 
                 return selectOne(statementId, args);
-
             }
         });
 
