@@ -19,3 +19,5 @@
 
 **流程图**
 ![image](https://github.com/wxt1471520488/images/blob/main/%E6%9C%AA%E5%91%BD%E5%90%8D%E6%96%87%E4%BB%B6.png)
+
+![image](https://github.githubassets.com/images/mona-loading-default.gif)
